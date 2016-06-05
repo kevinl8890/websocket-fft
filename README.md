@@ -6,6 +6,11 @@ librtlsdr -> libfftw3 -> json -> libwebsockets -> html5 canvas
 
 ![Browser Screenshot](http://i.imgur.com/4wW7KLh.png)
 
+### Known Issues
+
+* Each unique line of FFT data appears to be sent to the browser twice.
+* Occasional full-scale spike/notch artifacts are visible on the FFT rendering, restarting the server often fixes these.
+
 ### Credit
 
 Projects used for reference included:
