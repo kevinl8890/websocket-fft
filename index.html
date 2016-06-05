@@ -1,0 +1,165 @@
+<html>
+<body>
+
+<canvas id="c" width="800" height="400" style="background-color: black;"></canvas>
+
+</body>
+<script>
+var canvasWidth=800;
+var canvasHeight=400;
+var el = document.getElementById('c');
+var ctx = el.getContext('2d');
+
+devicePixelRatio = window.devicePixelRatio || 1,
+backingStoreRatio = ctx.webkitBackingStorePixelRatio ||
+                    ctx.mozBackingStorePixelRatio ||
+                    ctx.msBackingStorePixelRatio ||
+                    ctx.oBackingStorePixelRatio ||
+                    ctx.backingStorePixelRatio || 1,
+ratio = devicePixelRatio / backingStoreRatio;
+
+if (devicePixelRatio !== backingStoreRatio) {
+
+    var oldWidth = el.width;
+    var oldHeight = el.height;
+
+    el.width = oldWidth * ratio;
+    el.height = oldHeight * ratio;
+
+    el.style.width = oldWidth + 'px';
+    el.style.height = oldHeight + 'px';
+
+    ctx.scale(ratio, ratio);
+}
+
+function random_fft(last, height)
+{
+    return (height/3)+(last/2)+(Math.pow((Math.random()-0.5),3)*height);
+}
+
+setInterval(function()
+{
+    var i;
+    var last_point = random_fft(canvasHeight/2, canvasHeight);
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    /* Draw Grid Lines */
+    ctx.save();
+    ctx.setLineDash([5, 15]);
+    for(i=0;i<4;i++)
+    {
+        ctx.beginPath();
+        ctx.moveTo(0,i*(canvasHeight/4));
+        ctx.lineTo(canvasWidth, i*(canvasHeight/4));
+        ctx.strokeStyle = 'grey';
+        ctx.stroke();
+    }
+    ctx.restore();
+    /* Draw FFT */
+    for(i=0;i<canvasWidth;i++)
+    {
+        ctx.beginPath();
+        ctx.moveTo(i, canvasHeight);
+        var new_point = random_fft(last_point, canvasHeight);
+        ctx.lineTo(i, new_point);
+        ctx.strokeStyle = 'green';
+        ctx.stroke();
+        last_point = new_point;
+    }
+},300000);
+
+function normaliseSample(data)
+{
+    return (-data);
+}
+
+function updateFFT(data)
+{
+    var i;
+    var last_point = random_fft(canvasHeight/2, canvasHeight);
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    /* Draw Grid Lines */
+    ctx.save();
+    ctx.setLineDash([5, 15]);
+    for(i=0;i<4;i++)
+    {
+        ctx.beginPath();
+        ctx.moveTo(0,i*(canvasHeight/4));
+        ctx.lineTo(canvasWidth, i*(canvasHeight/4));
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'grey';
+        ctx.stroke();
+    }
+    ctx.restore();
+    /* Draw FFT */
+    var data_length = data.length;
+    ctx.lineWidth=(canvasWidth/data_length);
+    ctx.strokeStyle = 'green';
+    for(i=0;i<data_length;i++)
+    {
+        ctx.beginPath();
+        ctx.moveTo((i/data_length)*canvasWidth, canvasHeight);
+        var new_point = ((normaliseSample(data[i])*canvasHeight)/1000);
+        ctx.lineTo((i/data_length)*canvasWidth, new_point);
+        ctx.stroke();
+        last_point = new_point;
+    }
+}
+
+var ws_url = "ws://127.0.0.1:7681/xxx";
+var ws_sock;
+var ws_reconnect = null;
+	
+var socket_di;
+
+function ws_connect()
+{
+    if ("WebSocket" in window)
+    {
+	    if (typeof MozWebSocket != "undefined")
+	    {
+		    socket_di = new MozWebSocket(ws_url, "fft");
+	    }
+	    else
+	    {
+		    socket_di = new WebSocket(ws_url, "fft");
+	    }
+
+	    try
+	    {
+		    socket_di.onopen = function()
+		    {
+		        window.clearInterval(ws_reconnect);
+		        ws_reconnect = null;
+		        console.log("Websocket Connection Opened");
+		    } 
+
+		    socket_di.onmessage = function got_packet(msg)
+		    {
+		        //console.log("Websocket Data: "+msg.data);
+		        updateFFT(JSON.parse(msg.data).fft);
+		    } 
+
+		    socket_di.onclose = function()
+		    {
+		        if(!ws_reconnect)
+		        {
+			        ws_reconnect = setInterval(function()
+			        {
+			            ws_connect();
+			        },500);
+			    }
+		    }
+	    }
+	    catch(exception)
+	    {
+		    console.log("Websocket Error" + exception);  
+	    }
+	}
+    else
+    {
+        alert("Websockets not supported in your browser!");
+    }
+}
+
+ws_connect();
+</script>
