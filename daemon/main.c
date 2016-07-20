@@ -12,7 +12,7 @@ struct lws_context *context;
 
 static uint8_t *buffer;
 static uint32_t dev_index = 0;
-static uint32_t frequency = 145000000; // Hz
+static uint32_t frequency = 000000; // Hz
 static uint32_t samp_rate = 2048000;
 static uint32_t buff_len = 2048;
 static int      ppm_error = 0;
