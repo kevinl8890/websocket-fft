@@ -1,0 +1,3 @@
+[submodule "airspy-daemon/libairspy"]
+	path = airspy-daemon/libairspy
+	url = https://github.com/airspy/host.git
