@@ -210,10 +210,7 @@ static void run_fft()
 
 int callback_fft(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-	unsigned char buf[LWS_PRE + 16384];//LWS_PRE+512
-	/* Out Buffer */
-	unsigned char *p = &buf[LWS_PRE];//LWS_PRE
-	int n, m;
+	int n;
 
 	switch (reason) {
 
@@ -222,9 +219,8 @@ int callback_fft(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
-		n = sprintf((char *)p, "%s", latest_fft_json);
-		m = lws_write(wsi, p, n, LWS_WRITE_TEXT);
-		if (m < n) {
+		n = lws_write(wsi, latest_fft_json, strlen(latest_fft_json), LWS_WRITE_TEXT);
+		if (!n) {
 			lwsl_err("ERROR %d writing to socket\n", n);
 			return -1;
 		}
@@ -234,7 +230,6 @@ int callback_fft(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 		if (len < 6)
 			break;
 		if (strcmp((const char *)in, "closeme\n") == 0) {
-			//lwsl_notice("dumb_inc: closing as requested\n");
 			lws_close_reason(wsi, LWS_CLOSE_STATUS_GOINGAWAY,
 					 (unsigned char *)"seeya", 5);
 			return -1;
@@ -380,24 +375,13 @@ int main(int argc, char **argv)
 	        latest_fft_json = json_stringify(jsonData, NULL);
 	        json_delete(jsonData);
 		    
-		    /*
-		     * This provokes the LWS_CALLBACK_SERVER_WRITEABLE for every
-		     * live websocket connection as soon as it can take more packets (usually immediately)
-		     */
+		    /* activate PROTOCOL_FFT on all sockets */
 			lws_callback_on_writable_all_protocol(context, &protocols[PROTOCOL_FFT]);
 			
 			oldms = ms;
 		}
 		
-		/*
-		 * If libwebsockets sockets are all we care about,
-		 * you can use this api which takes care of the poll()
-		 * and looping through finding who needed service.
-		 *
-		 * If no socket needs service, it'll return anyway after
-		 * the number of ms in the second argument.
-		 */
-
+        /* Service websockets, else wait 50ms */
 		n = lws_service(context, 50);
 	}
 
