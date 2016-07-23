@@ -1,0 +1,73 @@
+#batchat-wrapper {
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+  background: #3F464C;
+  color: #ccc;
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+  font-size: 90%;
+  position: relative;
+}
+#batchat-main-panel {
+  height: 100%;
+  padding-bottom: 30px;
+  bottom: 30px;
+}
+#batchat-messages-panel {
+  list-style: none;
+  padding: 7px;
+  padding-right: 5px;
+  margin-right: 120px !important;
+  overflow: auto;
+  margin: 0;
+}
+.batchat-messages-panel-object {
+  padding-bottom: 5px;
+}
+.batchat-message-datestamp {
+  text-decoration: underline;
+}
+.batchat-message-datestamp, .batchat-message-timestamp {
+  color: #b0b0b0;
+  padding-right: 1em;
+}
+.batchat-message-nick {
+  font-weight: bold;
+  color: #FBDE2D;
+  padding-right: 0.5em;
+}
+.batchat-message-text {
+    display: block;
+    margin-top: 0.2em;
+    margin-left: 0.5em; /*3.5em;*/
+}
+.batchat-message-announcement {
+  font-weight: bold;
+}
+#batchat-users-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  padding: 10px;
+  padding-bottom: 20px;
+  width: 120px;
+  overflow: auto;
+  border-left: 1px solid #ccc;
+}
+.batchat-users-panel-object {
+  padding-bottom: 10px;
+}
+#batchat-bottom-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  width: 100%;
+  padding: 0 5px;
+  height: 30px;
+  display: block;
+  background: #FFFFFF;
+  color: #111;
+}
