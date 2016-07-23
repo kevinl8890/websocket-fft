@@ -155,18 +155,18 @@ function updateFFT(data)
     /* Draw Vertical Lines */
     ctx.save();
     ctx.setLineDash([5, 20]);
-    for(i=0;i<10;i++)
+    for(i=0;i<8;i++)
     {
         ctx.beginPath();
         if((i%2))
         {
-            ctx.moveTo(i*(canvasWidth/10),25);
+            ctx.moveTo(i*(canvasWidth/8),25);
         }
         else
         {
-            ctx.moveTo(i*(canvasWidth/10),0);
+            ctx.moveTo(i*(canvasWidth/8),0);
         }
-        ctx.lineTo(i*(canvasWidth/10),canvasHeight);
+        ctx.lineTo(i*(canvasWidth/8),canvasHeight);
         ctx.lineWidth = 1;
         ctx.strokeStyle = 'grey';
         ctx.stroke();
@@ -176,7 +176,7 @@ function updateFFT(data)
             ctx.font = "15px Arial";
             ctx.fillStyle = "white";
             ctx.textAlign = "center";
-            ctx.fillText("10.4"+(89+i)+"MHz",i*(canvasWidth/10),17);
+            ctx.fillText("10.4"+(91+i)+"MHz",i*(canvasWidth/8),17);
         }
     }
     ctx.restore();
