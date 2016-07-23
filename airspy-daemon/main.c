@@ -32,7 +32,7 @@ uint32_t sensitivity_gain_val = 10; // MAX=21
 uint32_t freq_hz = 145000000;
 
 /** FFTW Vars **/
-#define FFT_SIZE    1024
+#define FFT_SIZE    2048
 void            *buffer;
 pthread_mutex_t buffer_mutex;
 static float   *log_pwr_fft;    /* dbFS relative to 1.0 */
