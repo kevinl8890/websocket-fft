@@ -29,19 +29,16 @@ uint32_t linearity_gain_val = 15; // MAX=21
 //#define SENSITIVE
 uint32_t sensitivity_gain_val = 10; // MAX=21
 /* Frequency */
-uint32_t freq_hz = 98000000;
+uint32_t freq_hz = 145000000;
 
 /** FFTW Vars **/
-#define FFT_SIZE    2048
+#define FFT_SIZE    1024
 void            *buffer;
 pthread_mutex_t buffer_mutex;
 static float   *log_pwr_fft;    /* dbFS relative to 1.0 */
 fftw_complex* fft_in;
 fftw_complex*   fft_out;
 fftw_plan   fft_plan;
-
-uint16_t fft_top = FFT_SIZE - (FFT_SIZE*0.1);
-uint16_t fft_bottom = FFT_SIZE*0.1;
 
 int airspy_rx(airspy_transfer_t* transfer);
 
@@ -228,7 +225,7 @@ void *thread_fft(void *dummy)
         JsonNode *jsonData = json_mkobject();
         JsonNode *fftArray = json_mkarray();
         JsonNode *fftRow;
-        for(j=fft_bottom;j<fft_top;j++)
+        for(j=0;j<FFT_SIZE;j++)
         {
             fftRow = json_mknumber(((roundf(log_pwr_fft[j]*10))));
             json_append_element(fftArray, fftRow);
@@ -389,7 +386,7 @@ int main(int argc, char **argv)
 	}
 	fprintf(stdout, "Done.\n");
 	
-	fprintf(stdout, "Initialising FFT (%d bin, (%d - %d)).. ", FFT_SIZE, fft_bottom, fft_top);
+	fprintf(stdout, "Initialising FFT (%d bin).. ", FFT_SIZE);
 	fflush(stdout);
 	setup_fft();
 	fprintf(stdout, "Done.\n");
