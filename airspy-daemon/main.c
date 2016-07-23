@@ -7,8 +7,12 @@ int max_poll_elements;
 int debug_level = 3;
 volatile int force_exit = 0;
 struct lws_context *context;
+
+pthread_t fftThread;
 /* FFT JSON Buffer */
 char* latest_fft_json;
+pthread_mutex_t fft_json_mutex;
+char* websocket_out_json;
 
 /** AirSpy Vars **/
 struct airspy_device* device = NULL;
@@ -153,7 +157,7 @@ static uint8_t setup_airspy()
     return 1;
 }
 
-
+/* Airspy RX Callback, this is called by a new thread within libairspy */
 int airspy_rx(airspy_transfer_t* transfer)
 {    
     if(transfer->samples != NULL && transfer->sample_count>=(FFT_SIZE*2))
@@ -208,6 +212,37 @@ static void run_fft()
 
 }
 
+void *thread_fft(void *dummy)
+{
+    (void*) dummy;
+    int j;
+    struct timespec ts;
+    ts.tv_sec = (100) / 1000;
+    ts.tv_nsec = ((100) % 1000) * 1000000;
+    while(1)
+    {
+        run_fft();
+        JsonNode *jsonData = json_mkobject();
+        JsonNode *fftArray = json_mkarray();
+        JsonNode *fftRow;
+        for(j=0;j<FFT_SIZE;j++)
+        {
+            fftRow = json_mknumber(((roundf(log_pwr_fft[j]*10))));
+            json_append_element(fftArray, fftRow);
+        }
+        json_append_member(jsonData, "fft", fftArray);
+        
+        pthread_mutex_lock(&fft_json_mutex);
+        free(latest_fft_json);
+        latest_fft_json = json_stringify(jsonData, NULL);
+        pthread_mutex_unlock(&fft_json_mutex);
+        
+        json_delete(jsonData);
+        
+        nanosleep(&ts, NULL);
+    }
+}
+
 int callback_fft(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
 {
 	int n;
@@ -219,7 +254,7 @@ int callback_fft(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
-		n = lws_write(wsi, latest_fft_json, strlen(latest_fft_json), LWS_WRITE_TEXT);
+		n = lws_write(wsi, websocket_out_json, strlen(websocket_out_json), LWS_WRITE_TEXT);
 		if (!n) {
 			lwsl_err("ERROR %d writing to socket\n", n);
 			return -1;
@@ -303,7 +338,7 @@ int main(int argc, char **argv)
 {
 	struct lws_context_creation_info info;
 	unsigned int ms, oldms = 0;
-	int n = 0, j;
+	int n = 0;
 	int result;
 
 	signal(SIGINT, sighandler);
@@ -334,6 +369,12 @@ int main(int argc, char **argv)
 		lwsl_err("LWS init failed\n");
 		return -1;
 	}
+	websocket_out_json = malloc(16384+1);
+	if(websocket_out_json == NULL)
+	{
+	    fprintf(stderr, "JSON buffer malloc failed.\n");
+		return -1;
+	}
 	fprintf(stdout, "Done.\n");
 	
 	fprintf(stdout, "Initialising AirSpy (%.01fMSPS, %.03fMHz).. ",(float)sample_rate_val/1000000,(float)freq_hz/1000000);
@@ -349,6 +390,14 @@ int main(int argc, char **argv)
 	fflush(stdout);
 	setup_fft();
 	fprintf(stdout, "Done.\n");
+	
+	fprintf(stdout, "Starting FFT Thread.. ");
+	if (pthread_create(&fftThread, NULL, thread_fft, NULL))
+	{
+		fprintf(stderr, "Error creating FFT thread\n");
+		return -1;
+	}
+	fprintf(stdout, "Done.\n");
 
     fprintf(stdout, "Server running.\n");
     fflush(stdout);
@@ -361,19 +410,12 @@ int main(int argc, char **argv)
 		ms = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
 		if ((ms - oldms) > 100)
 		{
-            run_fft();
-	        JsonNode *jsonData = json_mkobject();
-	        JsonNode *fftArray = json_mkarray();
-	        JsonNode *fftRow;
-	        for(j=0;j<FFT_SIZE;j++)
-            {
-                fftRow = json_mknumber(((roundf(log_pwr_fft[j]*10))));
-                json_append_element(fftArray, fftRow);
-            }
-            json_append_member(jsonData, "fft", fftArray);
-            free(latest_fft_json);
-	        latest_fft_json = json_stringify(jsonData, NULL);
-	        json_delete(jsonData);
+		    pthread_mutex_lock(&fft_json_mutex);
+		    if(latest_fft_json!=NULL)
+		    {
+		        strncpy(websocket_out_json,latest_fft_json,16384);
+		    }
+		    pthread_mutex_unlock(&fft_json_mutex);
 		    
 		    /* activate PROTOCOL_FFT on all sockets */
 			lws_callback_on_writable_all_protocol(context, &protocols[PROTOCOL_FFT]);
