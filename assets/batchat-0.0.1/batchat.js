@@ -65,7 +65,7 @@ function batchat_init(targetElement, subscribedRoom, userNick, viewers_cb)
             }
         }
     });
-    socket = io('https://beta.batc.tv', {path: "/sockchat", query: 'room='+subscribedRoom});
+    socket = io('https://beta.batc.tv', {path: "/chat/socket.io", query: 'room='+subscribedRoom});
     socket.on('history', function (data) {
         //console.log(data);
         initUsers(data.nicks);
