@@ -24,12 +24,12 @@ uint32_t sample_rate_val = 10000000;
 uint32_t biast_val = 0;
 /* Linear Gain */
 #define LINEAR
-uint32_t linearity_gain_val = 15; // MAX=21
+uint32_t linearity_gain_val = 20; // MAX=21
 /* Sensitive Gain */
 //#define SENSITIVE
 uint32_t sensitivity_gain_val = 10; // MAX=21
 /* Frequency */
-uint32_t freq_hz = 145000000;
+uint32_t freq_hz = 1250000000;
 
 /** FFTW Vars **/
 #define FFT_SIZE    2048
@@ -408,7 +408,7 @@ int main(int argc, char **argv)
 		gettimeofday(&tv, NULL);
 
 		ms = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
-		if ((ms - oldms) > 100)
+		if ((ms - oldms) > 333)
 		{
 		    pthread_mutex_lock(&fft_json_mutex);
 		    if(latest_fft_json!=NULL)
