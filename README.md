@@ -6,6 +6,11 @@ librtlsdr -> libfftw3 -> json -> libwebsockets -> html5 canvas
 
 ![Browser Screenshot](http://i.imgur.com/4wW7KLh.png)
 
+## Dependencies
+
+* git submodule update --init
+* sudo apt-get install libusb-1.0-0-dev libwebsockets-dev
+
 ### Known Issues
 
 * Each unique line of FFT data appears to be sent to the browser twice.
