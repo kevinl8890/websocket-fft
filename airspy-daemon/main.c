@@ -430,7 +430,6 @@ int main(int argc, char **argv)
 	lws_context_destroy(context);
 	close_airspy();
 	close_fftw();
-	lwsl_notice("libwebsockets-test-server exited cleanly\n");
 	closelog();
 
 	return 0;

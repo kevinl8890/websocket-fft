@@ -1,7 +1,7 @@
 CC=gcc
 AIRSPY_SRCS=libairspy/libairspy/src/*.c
 SRCS=$(AIRSPY_SRCS) json/json.c main.c
-LIBS=-lwebsockets -lm -lfftw3 -I/usr/include/libusb-1.0/ -lusb-1.0 -lpthread
+LIBS=-Wl,-Bstatic -lfftw3 -Wl,-Bdynamic -lwebsockets -lm -I/usr/include/libusb-1.0/ -lusb-1.0 -lpthread
 CFLAGS=-O3 -march=native
 
 BINARY=fft_daemon
