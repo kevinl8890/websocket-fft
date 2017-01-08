@@ -95,14 +95,13 @@
 <script src="assets/socket.io-1.4.5.js"></script>
 <script src="assets/batchat-0.0.1/batchat.js"></script>
 <script>
+var ws_url = "ws://127.0.0.1:7681/fft";
+var ws_sock = null;
+var ws_reconnect = null;
+
 var ctx;
 var canvasWidth;
 var canvasHeight;
-
-var ws_url = "ws://127.0.0.1:7681/xxx";
-var ws_sock;
-var ws_reconnect = null;
-var socket_di;
 
 /* On load */
 $(function() {
@@ -145,7 +144,7 @@ $(function() {
 
 function normaliseSample(data)
 {
-    return (-data*(1.25))-100;
+    return (data*(1.25))-100;
 }
 
 function updateFFT(data)
@@ -213,34 +212,42 @@ function updateFFT(data)
 
 function ws_connect()
 {
-    if ("WebSocket" in window)
+    if("WebSocket" in window)
     {
+        if(ws_sock != null)
+        {
+            return;
+        }
+    
 	    if (typeof MozWebSocket != "undefined")
 	    {
-		    socket_di = new MozWebSocket(ws_url, "fft");
+		    ws_sock = new MozWebSocket(ws_url, "fft");
 	    }
 	    else
 	    {
-		    socket_di = new WebSocket(ws_url, "fft");
+		    ws_sock = new WebSocket(ws_url, "fft");
 	    }
 
 	    try
 	    {
-		    socket_di.onopen = function()
+		    ws_sock.onopen = function()
 		    {
 		        window.clearInterval(ws_reconnect);
 		        ws_reconnect = null;
 		        console.log("Websocket Connection Opened");
 		    } 
 
-		    socket_di.onmessage = function got_packet(msg)
+		    ws_sock.onmessage = function got_packet(msg)
 		    {
 		        //console.log("Websocket Data: "+msg.data);
 		        updateFFT(JSON.parse(msg.data).fft);
 		    } 
 
-		    socket_di.onclose = function()
+		    ws_sock.onclose = function()
 		    {
+		        ws_sock.close();
+		        ws_sock = null;
+		        
 		        if(!ws_reconnect)
 		        {
 			        ws_reconnect = setInterval(function()

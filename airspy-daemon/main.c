@@ -1,6 +1,13 @@
 #include "main.h"
 
-#define FLOAT32_EL_SIZE_BYTE (4)
+#define WS_PORT         7681
+
+#define FFT_INTERVAL    333 // milliseconds
+#define FFT_SIZE        2048
+#define FFT_TIME_SMOOTH 1.0f // 0.0 - 1.0
+
+#define AIRSPY_FREQ     1250000000
+#define AIRSPY_SAMPLE   10000000
 
 /** LWS Vars **/
 int max_poll_elements;
@@ -19,7 +26,7 @@ struct airspy_device* device = NULL;
 /* Sample type -> 32bit Complex Float */
 enum airspy_sample_type sample_type_val = AIRSPY_SAMPLE_FLOAT32_IQ;
 /* Sample rate -> 6MSps */
-uint32_t sample_rate_val = 10000000;
+uint32_t sample_rate_val = AIRSPY_SAMPLE;
 /* DC Bias Tee -> 0 (disabled) */
 uint32_t biast_val = 0;
 /* Linear Gain */
@@ -29,10 +36,10 @@ uint32_t linearity_gain_val = 20; // MAX=21
 //#define SENSITIVE
 uint32_t sensitivity_gain_val = 10; // MAX=21
 /* Frequency */
-uint32_t freq_hz = 1250000000;
+uint32_t freq_hz = AIRSPY_FREQ;
 
 /** FFTW Vars **/
-#define FFT_SIZE    2048
+#define FLOAT32_EL_SIZE_BYTE (4)
 void            *buffer;
 pthread_mutex_t buffer_mutex;
 static float   *log_pwr_fft;    /* dbFS relative to 1.0 */
@@ -207,6 +214,8 @@ static void run_fft()
         lpwr = 10.f * log10(pwr + 1.0e-20f);
 
         gain = (100.f + lpwr) / 50.f;
+        gain = gain + ((1.f - gain) * (1.f - FFT_TIME_SMOOTH));
+        
         log_pwr_fft[i] = log_pwr_fft[i] * (1.f - gain) + lpwr * gain;
     }
 
@@ -217,8 +226,8 @@ void *thread_fft(void *dummy)
     (void*) dummy;
     int j;
     struct timespec ts;
-    ts.tv_sec = (100) / 1000;
-    ts.tv_nsec = ((100) % 1000) * 1000000;
+    ts.tv_sec = (FFT_INTERVAL - 1) / 1000;
+    ts.tv_nsec = ((FFT_INTERVAL - 1) % 1000) * 1000000;
     while(1)
     {
         run_fft();
@@ -227,7 +236,7 @@ void *thread_fft(void *dummy)
         JsonNode *fftRow;
         for(j=0;j<FFT_SIZE;j++)
         {
-            fftRow = json_mknumber(((roundf(log_pwr_fft[j]*10))));
+            fftRow = json_mknumber(roundf(-log_pwr_fft[j]*10));
             json_append_element(fftArray, fftRow);
         }
         json_append_member(jsonData, "fft", fftArray);
@@ -351,7 +360,7 @@ int main(int argc, char **argv)
 	lws_set_log_level(debug_level, lwsl_emit_syslog);
 
 	memset(&info, 0, sizeof info);
-    info.port = 7681;
+    info.port = WS_PORT;
 	info.iface = NULL;
 	info.protocols = protocols;
 	info.gid = -1;
@@ -361,7 +370,7 @@ int main(int argc, char **argv)
 	info.extensions = exts;
 	info.timeout_secs = 5;
 
-    fprintf(stdout, "Initialising Websocket on port %d.. ",info.port);
+    fprintf(stdout, "Initialising Websocket Server on port %d.. ",info.port);
     fflush(stdout);
 	context = lws_create_context(&info);
 	if (context == NULL)
@@ -424,9 +433,10 @@ int main(int argc, char **argv)
 		}
 		
         /* Service websockets, else wait 50ms */
-		n = lws_service(context, 50);
+		n = lws_service(context, 10);
 	}
 
+    /* TODO: Catch SIG for graceful exit */
 	lws_context_destroy(context);
 	close_airspy();
 	close_fftw();
