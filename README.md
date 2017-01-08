@@ -6,10 +6,22 @@ librtlsdr -> libfftw3 -> json -> libwebsockets -> html5 canvas
 
 ![Browser Screenshot](http://i.imgur.com/4wW7KLh.png)
 
-## Dependencies
+## Install
 
-* git submodule update --init
-* sudo apt-get install libusb-1.0-0-dev libwebsockets-dev
+* git clone --recursive https://github.com/philcrump/websocket-fft.git && cd websocket-fft/
+
+### Dependencies
+
+* sudo apt-get install build-essential libfftw3-dev libusb-1.0-0-dev libwebsockets-dev
+
+### Compile
+
+* cd airspy-daemon/ && make
+
+### Run
+
+* ./fft-daemon
+* Open '../index.html' in a browser
 
 ### Known Issues
 
